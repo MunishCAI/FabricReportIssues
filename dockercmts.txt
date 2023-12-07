@@ -1,0 +1,5 @@
+1.Built image
+sudo docker image build -t  ui .
+2. load:
+sudo docker load -i ui.tar
+sudo docker run --restart=always -it --name knitting-ui -v /home/kniti/Desktop/fabric_report:/app/report -v /home:/home -v /home/kniti/projects/knit-i/config/config_webui.ini:/app/config_webui.ini --network=host -e "DB_DBNAME=knitting" -e "DB_PORT=5432" -e "DB_USER=postgres" -e "DB_PASS=55555" -e "DB_HOST=127.0.0.1" ui
