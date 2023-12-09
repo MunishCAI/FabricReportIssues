@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knitting UI</title>
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> -->
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <!-- <script src="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.min.js"></script> -->
+    <script src="{{ url_for('static', filename='js/sweet-alert.min.js') }}"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.css"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sweet-alert.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </head>
+<body>
+    {% if error_message %}
+    <p style="color: red;">{{ error_message }} </p>
+    {% endif %}
+
+<!--Doff login Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="errorModalLabel">Login to Update Doff</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="errorMessage" style="color: red;"></p>
+        <form>
+          <div class="container">
+            <label for="uname"><b>Username</b></label>
+            <input type="text" placeholder="Enter Username" name="uname" id="uname" value="User1"  required>
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" id="psw" name="psw" required>
+            <button id='check' type="button">Login</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!--setting login Modal -->
+<div class="modal fade" id="settingloginModal" tabindex="-1" aria-labelledby="settingloginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="settingloginModal">Login to Update Setting</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="errorMessage_setting" style="color: red;"></p>
+        <form>
+          <div class="container">
+            <label for="uname"><b>Username</b></label>
+            <input type="text" placeholder="Enter Username" name="uname" id="uname" value="User1" required>
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" id="psw" name="psw_setting" required>
+            <button id='check_setting' type="button">Login</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- doff iNFO afterlogin Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Doff Details</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        
+        <form action="/rollUpdate" method="post" onsubmit="return validateForm()">
+          <table id="g1">
+            <tr>
+                <td><label for="doff_"><b>Doff Per Roll</b></label></td>
+                <td> &nbsp &nbsp &nbsp &nbsp<input class="tab1" type="number" placeholder="Enter Doff No" name="doff" id="doff_" required></td>
+            </tr>
+            <!--
+            <tr>
+                <td><label for="doff_"><b>Current Doff No</b></label></td>
+                <td><input class="tab1" type="number" placeholder="Enter Current Doff No" name="c_doff" id="c_doff_" required></td>
+            </tr>
+            <tr>
+                <td><label for="order"><b>Order No</b></label></td>
+                <td><input class="tab1" type="number" placeholder="Enter Order No" name="order" id="order" disabled title="This field Diabled!"></td>
+            </tr>
+            <tr>
+                <td><label for="roll"><b>Roll No</b></label></td>
+                <td><input class="tab1" type="number" placeholder="Enter Roll No" name="roll" id="roll" disabled title="This field Diabled!"></td>
+            </tr>
+            
+            <tr>
+                <td><label for="s1"><b>Shift</b></label></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="radio" id="s1" name="shiftdet" value="1" disabled title="This field Diabled!"><label for="s1">Shift 1</label></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="radio" id="s2" name="shiftdet" value="2" disabled title="This field Diabled!"><label for="s2">Shift 2</label></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="radio" id="s3" name="shiftdet" value="3" disabled title="This field Diabled!"><label for="s3">Shift 3</label></td>
+            </tr>
+            -->
+        </table>
+            <br>
+            <div class="text-center">
+                <button id='rollcomplete' type="submit" style="background-color: green; border-radius: 5px; padding: 5px 10px 5px 10px;">Submit</button>
+            </div>
+           <br>
+          </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- pROGRAM iNFO Modal -->
+<div class="modal fade" id="settingModal" tabindex="-1" aria-labelledby="settingModalLabel" aria-hidden="true" >
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="settingModalLabel">Program Details</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Content for the Example Modal -->        
+          <div class="con2">
+            <form id="settings-form" class="form-container" method="post">
+                <table id="g">
+                    <tr>
+                        <td><label for="mill_">Mill:</label></td>
+                        <td><input type="text" id="mill_" name="mill" required></td>
+                        <td id='tdspace'><label for="machinetype_">Machine Type:</label></td>
+                        <td>
+                        <select name="machinetype" id="machinetype_">
+                          <option value="Single_Jersey">Single Jersey</option>
+                          <option value="Double_Jersey">Double Jersey</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td ><label for="machineno_">Machine Number:</label></td>
+                        <td><input type="text" id="machineno_" name="machineno" required></td>
+                        <td id='tdspace'><label for="dia_">Dia:</label></td>
+                        <td><input type="text" id="dia_" name="dia" required></td>  
+                    </tr>
+                    <tr>
+                        <td><label for="gg_">GG:</label></td>
+                        <td><input type="text" id="gg_" name="gg" required></td>  
+                    </tr>
+                    <tr>
+                        <td ><label for="party_">Party:</label></td>
+                        <td><input type="text" id="party_" name="party" required></td>
+                        <td id='tdspace'><label for="needledrop_">Needle Drop:</label></td>
+                        
+                        <td>
+                          <select name="needledrop" id="needledrop_">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="count_">Count:</label></td>
+                        <td><input type="text" id="count_" name="count" required></td>
+                        <td id='tdspace'><label for="denier_">Denier:</label></td>
+                        <td><input type="text" id="denier_" name="denier" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="fabric_">Fabric:</label></td>
+                        <td>
+                          <select name="fabric" id="fabric_">
+                            <option value="Cotton">Cotton</option>
+                            <option value="Lycra - cotton">Lycra - cotton</option>
+                            <option value="Polyester cotton">Polyester cotton</option>
+                            <option value="Viscose cotton">Viscose cotton</option>
+                            <option value="Rayon Cotton">Rayon Cotton</option>
+                            <option value="Lycra micro modal cotton">Lycra micro modal cotton</option>
+                            <option value="Lycra modal cotton">Lycra modal cotton</option>
+                            <option value="Lycra micro modal cotton">Lycra micro modal cotton</option>
+                        <td id='tdspace'><label for="knittype_">Knit Type:</label></td>
+                        <td>
+                        <select name="knittype" id="knittype_">
+                          <option value="Plain">Plain</option>
+                          <option value="Rib">Rib</option>
+                          <option value="Rib_2x3">Rib 2x3</option>
+                          <option value="Rib_3x3">Rib 3x3</option>
+                          <option value="Purl">Purl</option>
+                          <option value="Fleece">Fleece</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gsm_">GSM:</label></td>
+                        <td><input type="text" id="gsm_" name="gsm" required></td>
+                        <td id='tdspace'><label for="ll_">LL:</label></td>
+                        <td><input type="text" id="ll_" name="ll" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="rollweight_">Roll Weight:</label></td>
+                        <td><input type="text" id="rollweight_" name="rollweight" required></td>
+                        <td id='tdspace'> <label for="rotations_">Rotations:</label></td>
+                        <td><input type="text" id="rotations_" name="rotations" required></td>
+                      
+                    </tr>
+                    <tr>
+                        <td><label for="lot_">Lot:</label></td>
+                        <td><input type="text" id="lot_" name="lot" required></td>
+                        <td id='tdspace'><label for="job_number">Job Number:</label></td>
+                        <td><input type="text" id="job_number" name="jobnumber" required></td>
+                    </tr>
+                    
+                </table>
+                <br>
+                <div class="text-center">
+                    <input type="button" name="submit" id="submit" value="Submit" style="background-color: green; border-radius: 5px; padding: 5px 10px 5px 10px;">
+                </div>
+               <br>
+              </form>
+              <label for="programsave">saved program</label>
+              <select name="programsave" id="programsave" >
+                <option></option>
+                <option value="Saved_program_1" id="Saved_program_1">Saved program 1</option>
+                <option value="Saved_program_2" id="Saved_program_2">Saved program 2</option>
+                <option value="Saved_program_3" id="Saved_program_3">Saved program 3</option>
+              </select>
+            </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="reportModalLabel">Report</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      
+      <div class="modal-body" >
+        <!-- Content for the Report Modal "-->        
+        <div class="con2">
+          <label for="datepicker">Select a date:&nbsp;&nbsp;</label>
+          <input type="date" id="datepicker" name="datepicker" required><br><br>
+          <button type="button" id="generateReportButton" class="btn btn-primary">Generate Day Report</button>
+          <button type="button" id="generateshiftA_ReportButton" class="btn btn-primary">Generate shift A Report</button>
+          <button type="button" id="generateshiftB_ReportButton" class="btn btn-primary">Generate shift B Report</button>
+          <button type="button" id="generateshiftC_ReportButton" class="btn btn-primary">Generate shift C Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- doff updated status Modal -->
+<div class="modal fade" id="doffupdatedModal" tabindex="-1" aria-labelledby="doffupdatedModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="doffupdatedModalLabel">Notification!</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Content for the Example Modal -->
+        <p>Doff data has been Updated.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- setting updated status Modal -->
+<div class="modal fade" id="doffupdatedModal" tabindex="-1" aria-labelledby="doffupdatedModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="doffupdatedModalLabel">Notification!</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Content for the Example Modal -->
+        <p>Doff data has been Updated.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- setting modal new login-->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+        <form id="passwordForm">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" required>
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Machine INfo modal-->
+<div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Machine info</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Info</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>Machineprgdtl id</td>
+            <td id= "machineprgdtl_id"></td>
+          </tr>
+          <!--<tr>
+            <th scope="row">2</th>
+            <td>Program Name</td>
+            <td id="program_name"></td>
+          </tr>
+          <tr>
+            <th scope="row">3</th>
+            <td>Description</td>
+            <td id= "description"></td>
+          </tr>-->
+          <tr>
+            <th scope="row">2</th>
+            <td>gsm</td>
+            <td id="gsm_ll"></td>
+          </tr>
+          <tr>
+            <th scope="row">3</th>
+            <td>gg</td>
+            <td id="gg"></td>
+          </tr>
+          <tr>
+            <th scope="row">4</th>
+            <td>Fabric Type</td>
+            <td id="fabric_type"></td>
+          </tr>
+          <tr>
+            <th scope="row">5</th>
+            <td>Job No</td>
+            <td id= "job_no"></td>
+          </tr>
+          <tr>
+            <th scope="row">6</th>
+            <td>Needle Drop</td>
+            <td id="needle_drop"></td>
+          </tr>
+          <tr>
+            <th scope="row">7</th>
+            <td>Roll Weight</td>
+            <td id= "roll_weight"></td>
+          </tr>
+          <tr>
+            <th scope="row">8</th>
+            <td>doff</td>
+            <td id="doff"></td>
+          </tr>
+          <tr>
+            <th scope="row">9</th>
+            <td>Count</td>
+            <td id="count"></td>
+          </tr>
+          <tr>
+            <th scope="row">10</th>
+            <td>Mill</td>
+            <td id= "mill"></td>
+          </tr>
+          <tr>
+            <th scope="row">11</th>
+            <td>Dia</td>
+            <td id="dia"></td>
+          </tr>
+          <tr>
+            <th scope="row">12</th>
+            <td>Lot</td>
+            <td id= "lot"></td>
+          </tr>
+          <tr>
+            <th scope="row">13</th>
+            <td>Party</td>
+            <td id="party"></td>
+          </tr>
+          <tr>
+            <th scope="row">14</th>
+            <td>Timestamp</td>
+            <td id= "timestamp"></td>
+          </tr>
+         
+        </tbody>
+      </table>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+    <!-- top image -->
+    <div class="mx-2container-fluid text-center border">
+        <div class="row" >
+          <div class="col-3" >
+            <img
+            style="height:5rem;"
+            class="screenshot-from-2023-05-28-10-"
+            alt=""
+            src="{{ url_for('static', filename='images/screenshot-from-20230528-103416-2@2x.png') }}" 
+            />
+          </div>
+          <div class="col-7">
+            <img
+            style="width: 16rem;"
+            class="screenshot-from-2023-05-28-10-"
+            alt=""
+            src="{{ url_for('static', filename='images/Knit_i.jpeg') }}"
+            />
+          </div>
+          <div class="col">
+            
+          </div>
+        </div>
+      </div>
+    <!-- main window -->
+    <div class="mx-3 container-fluid">
+        <div class="row">
+          <!-- Left menu -->
+          <div class="col-2">
+            <div class="p-3 m-1  card text-center custom-card" id="homeclickablediv"> 
+                <div class="card-body">
+                    <img class="ionhome-icon" alt="" 
+                    src="{{ url_for('static', filename='images/ionhome.svg') }}" />
+                    <br><br>
+                    <h5 class="card-title crdtitlelm" id="homebutton">Home </h5>
+                </div>
+              </div>
+
+              <div class="p-3 m-1 card text-center custom-card" id="ProgramclickableDiv">
+                <div class="card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/edit-svgrepo-com.svg') }}"/>
+                    <br>  <br>
+                    <h5 type="button" class="card-title crdtitlelm" id="settingsLink"  data-bs-toggle="modal" data-bs-target="#settingModal">Edit program info</h5>
+                </div>
+              </div>
+
+              <div class="p-3 m-1 card text-center custom-card" id="DoffclickableDiv">
+                <div class=" card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/vector.svg') }}"/>
+                    <br><br>
+                    <h5 type="button" id="Doff_b" data-bs-toggle="modal" data-bs-target="#errorModal" class="card-title crdtitlelm">Update doff info </h5>
+                </div>
+              </div>  
+
+              <div class="p-3 m-1  card text-center custom-card" id="MoreclickableDiv">
+                <div class=" card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/info--undefined.svg') }}"/>
+                    <br><br>
+                    <h5 id='moreinfo'  class="card-title crdtitlelm"type="button"  data-bs-toggle="modal" data-bs-target="#exampleModal1" >
+                      View program info </h5>
+                </div>
+              </div>
+              <!--Report-->
+              <div class="p-3 m-1 card text-center custom-card" id="reportclickableDiv">
+                <div class="card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/report.svg') }}"/>
+                    <br>  <br>
+                    <h5 type="button" class="card-title crdtitlelm" id="reportLink"  data-bs-toggle="modal" data-bs-target="#reportModal">Report</h5>
+                </div>
+              </div>
+              <!--DefectLog-->
+              <div class="p-3 m-1 card text-center custom-card" id="DefectLogclickableDiv">
+                <div class="card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/report.svg') }}"/>
+                    <br>  <br>
+                    <h5 type="button" class="card-title crdtitlelm" id="DefectLogLink" >Defect Log</h5>
+                </div>
+              </div>
+              <!--setting
+              <div class="p-3 m-1 card text-center custom-card" id="newsettingclickableDiv">
+                <div class="card-body">
+                    <img class="ionhome-icon" alt="" src="{{ url_for('static', filename='images/setting.svg') }}"/>
+                    <br>  <br>                    
+                    <h5   type="button" class="card-title crdtitlelm" id="newsetting_h5"  data-bs-toggle="modal" data-bs-target="#settingloginModal" >  <a  id="newsetting" style="text-decoration: none;">Setting</a></h5>
+                </div>
+              </div>-->
+          </div>  
+          
+          <!--  menu-Center menu -->
+          <div class="col-10"><div class="card text-center">
+            <!--  TOP menu -->
+              <div class="row-2 card-footer text-body-secondary">
+                <div class="container text-center ">
+                    <div class="row">
+                      <div class="col">
+                        <div  class="p-1 m-1 card text-center custom-card ">
+                            <div class=" card-body" style="min-width: 8rem;min-height:4rem;">
+                                <h5 class="card-title">Machine Status </h5>
+                                <div id="machinestatus" ></div>  
+                            </div>
+                          </div>
+                      </div>
+
+                      <div class="col">
+                        <div class="p-1 m-1  card text-center custom-card">
+                            <div class=" card-body" style="min-width: 8rem;min-height:4rem;">
+                                <h5 class="card-title">Doff Count</h5>
+                                <span style="color:white;">
+                                  <span id="rotation" style="color:white;">Current Rotation</span>/<span id="doff_number_r">Overall Rotations</span>
+                                </span>
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div id="animation-element" class="p-2  m-1  card text-center custom-card" >
+                            <div class=" card-body" style="min-width: 8rem;min-height:5rem;">
+                                <h5 type="button" id="alarm_reset_button"class="card-title" >Alarm Reset</h5>
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div class="p-3 m-1  card text-center custom-card" id="NewRollclickableDiv">
+                            <div class=" card-body" style="min-width: 8rem;min-height:4rem;">
+                                <h5 type="button" id="startNewRoll_button" class="card-title">Start New Roll</h5>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+            </div>
+    
+            <!-- Live img center card  -->
+        
+            <div class="card" style="height: 100;">
+              <div class="card card-body">
+                <div class=" card-body custom-card" style="height: 3rem;">
+                  <h5 id="imgTag" class="card-title" style="height: 2rem;">KnitI </h5>
+                </div>
+                <div class="collapse" id="collapseExample" >
+                  <div class="container text-center">
+                    <div class="row">
+                      <div class="col">
+                        <div class="  card text-center custom-card ">
+                            <div class=" card-body ">
+                                <h5 class="card-title">Defect : </h5>
+                                <p id="defectname" class="card-text crdtitlelm">--</p>
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div class=" card text-center custom-card ">
+                            <div class=" card-body">
+                                <h5 class="card-title">Roll Number : </h5>
+                                <p id="rollname" class="card-text crdtitlelm">--</p> 
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div class=" card text-center custom-card ">
+                            <div class=" card-body">
+                                <h5 class="card-title">Captured Time : </h5>
+                                <p id="captureAt" class="card-text crdtitlelm">--</p> 
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                </div>
+              
+                </div>
+                <!-- center card -->
+                <div id="dynamic-image" class="object-fit-sm-contain border rounded" >
+                  <img id="livecamera" class="ionhome-icon w-100"  alt="" style="max-height: 530px;"
+                  src=" "
+                  />
+                </div>
+                <img class="vector-icon4" id="vector-icon4" alt="" src="{{ url_for('static', filename='images/vector4.svg') }}" />
+                <img class="vector-icon5" id="vector-icon5" alt="" src="{{ url_for('static', filename='images/vector5.svg') }}" />
+                <img class="vector-icon6" id="vector-icon6" alt="" src="{{ url_for('static', filename='images/vector6.svg') }}" />
+                <img class="vector-icon7" id="vector-icon7" alt="" src="{{ url_for('static', filename='images/vector7.svg') }}" />
+                <div class="ocrloader" id="scanningdiv"></div>
+              </div>
+            </div>    
+          </div>    
+
+
+            <!-- Bottom Card -->
+            <div class="card-footer text-body-secondary">
+                <div class="container text-center ">
+                    <div class="row">
+                      <div class="col">
+                        <div class=" m-1  card text-center custom-card">
+                            <div class=" card-body" style="min-width: 8rem;min-height:8rem;">
+                                <h5 class="card-title">Machine Name</h5><br>
+                                <h5 id="machinedtl_name" class="card-text crdtitlelm">---</h5> 
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div class=" m-1  card text-center custom-card">
+                            <div class=" card-body" style="min-width: 8rem;min-height:8rem;">
+                                <h5 class="card-title">Roll Number</h5><br>
+                                <h5 id="rollnumber" class="card-text crdtitlelm">1550</h5> 
+                            </div>
+                          </div>
+                      </div>
+                      <div class="col">
+                        <div class="p-1 m-1  card text-center custom-card">
+                            <div class=" card-body" style="min-width: 8rem;min-height:8rem;">
+                                <h5 class="card-title">Fabric Type</h5><br>
+                                <h5 id="Fab_type" class="card-text crdtitlelm"></h5>
+                            </div>
+                          </div>
+                      </div>
+                      
+                      <div class="col">
+                        <div class="p-1 m-1  card text-center custom-card">
+                            <div class=" card-body" style="min-width: 8rem;min-height:8rem;">
+                                <h5 class="card-title">Defect Count</h5>
+                                <div id="table-container">
+                                  
+                                      <table>
+                                          <!-- Table content generated using JavaScript -->
+                                          <!-- You can add your dynamic content here -->
+                                      </table>
+                                  
+                              </div>
+                            </div>
+                          </div>
+                      </div>
+                      <!-- <div class="col">
+                        <div class="p-1 m-1 card custom-card" id="togclickableDiv">
+                          <div class="card-body d-flex align-items-center justify-content-center" style="min-width: 8rem; min-height: 8rem;">
+                              <h5 type="button" id="moreinfo_img" name="moreinfo_img" data-bs-toggle="collapse" href="#collapseExample" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample" disabled>
+                                  Toggle
+                              </h5>
+                          </div>
+                      </div> -->
+                      <div class="col">
+                        <div class="p-1 m-1 card custom-card" id="togclickableDiv" type="button" data-bs-toggle="collapse" href="#collapseExample" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample" >
+                          <div class="card-body d-flex align-items-center justify-content-center" style="min-width: 8rem; min-height: 8rem;">
+                              <h5  id="moreinfo_img" name="moreinfo_img" disabled>
+                                  Toggle
+                              </h5>
+                          </div>
+                      </div>
+                      Version : {{ webui_version }}
+                      
+                    </div>
+                  </div>
+            </div>
+          </div>
+        </div>
+
+
+          <!-- right menu 
+            <div class="col-3">
+            <div class="p-1 m-1 card " >
+              
+                <img id="latestdectimage" src="{{ url_for('static', filename='images/ld.png') }}" 
+                class="card-img-top" alt="..." style="height:14rem;">
+                <div class="card-body">
+                  <div class="container text-center">
+                    <div class="row">
+                      
+
+                      <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample">
+                      <div class="col text-center" style="font-size:.8rem;">
+                        Latest Defect
+                      </div>
+                      <a/>
+                      
+                      <div class="col">
+                        <img class="group-icon" alt="" src="{{ url_for('static', filename='images/group.svg') }}" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+
+              <div class="p-1 m-1 card" >
+                <img id="imagelc"
+                src=""
+                class="card-img-top" alt="..." style="height:14rem;">
+                <div class="card-body">
+                  <div class="container text-center">
+                    <div class="row">
+                      <div class="col">
+                        <img class="vector-icon1" alt="" src="{{ url_for('static', filename='images/frame.svg') }}" />
+                      </div>
+                      <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <div class="col text-center" style="font-size:.8rem;">
+                          LIVE Camera
+                        </div>
+                        <a/>
+                      <div class="col">
+                        
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+              <div class="p-1 m-1  card text-center custom-card1">
+                <div class=" card-body">
+                    <img class="ionhome-icon" width="20px" alt="" src="{{ url_for('static', filename='images/vector2.svg') }}"/>
+                    <br><br>
+                    <h5 type="button" data-bs-toggle="modal" data-bs-target="#errorModal" class="card-title crdtitlelm">Update Doff </h5>
+                </div>
+              </div>
+          </div>  -->        
+        </div>
+      </div>  
+  </body>
+</html>
