@@ -12,7 +12,6 @@ from collections import Counter
 import matplotlib.dates as mdates
 import matplotlib.image as mpimg
 import locale
-# from pandas import DataFrame
 
 locale.setlocale(locale.LC_TIME, 'C')
 encoding = 'utf-8'
@@ -28,11 +27,13 @@ def generate_plots_pdf(start_date, end_date):
     cursor = conn.cursor()
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+    # print(start_date,end_date)
+    
     num_days = (end_date - start_date).days + 1
     pdf_buffer = BytesIO()
     pdf_pages = PdfPages(pdf_buffer)
     plt.ioff()
-
+    
     for i in range(num_days):
 
         current_date = start_date + datetime.timedelta(days=i)
@@ -45,7 +46,7 @@ def generate_plots_pdf(start_date, end_date):
         logo_path = 'report_img/kpr-garments.jpg'
         logo_img = mpimg.imread(logo_path)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.915
+        logo_y_position = 0.899999
         ax_logo.set_position([0.05, logo_y_position, 0.1, 0.1]) 
         logo_width = 0.1
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
@@ -55,27 +56,27 @@ def generate_plots_pdf(start_date, end_date):
         logo_path_2 = 'report_img/logo.jpeg'
         logo_img = mpimg.imread(logo_path_2)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.93
-        ax_logo.set_position([0.89,logo_y_position, 0.10, 0.10])  
-        logo_width = 0.3
+        logo_y_position = 0.87  
+        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
+        logo_width = 0.2  
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
         current_datetime = datetime.datetime.now()
         formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
-        ax.text(-0.150, 1.20, f"Machine Name: ", fontsize=40, color='black', fontfamily='Arial')
-        ax.text(-0.150, 1.00, "Fabric Color:", fontsize = 40, color='black', fontfamily='Arial')
-        ax.text(-0.150, 0.80, "Material Type:", fontsize = 40, color='black', fontfamily='Arial')
-        ax.text(0.81, 1.20, f"Date: {current_date}", fontsize = 40, color='black', fontfamily='Arial')
-        ax.text(0.81, 1.00, "Time :6AM to 6PM", fontsize = 40, color='black', fontfamily='Arial')
+        MachineName = GetMachineName()
+        ax.text(-0.150, 0.995, f"Machine Name: {MachineName}", fontsize=40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.835, "Fabric Code:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.675, "Material Type:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.81, 0.995, f"Date: {current_date}", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.81, 0.835, "Time :6AM to 6AM", fontsize = 40, color='black', fontfamily='Arial')
         ax.text(-0.150, 0.47, "Fabric Inspection Report", fontsize = 40, color='red', fontfamily='Arial')
         ax.text(-0.150, -2.4, "Production Report & Defect Report", fontsize = 40, color='red', fontfamily='Arial')
         ax1.text(-0.150, -2.3, f"Pdf generated on : {formatted_datetime}", fontsize = 20, color='black')
         ax1.text(0.95, -2.3, f"Version : 1.3.2.9 ", fontsize = 20, color='black')
         ax.axis('off')
         ax1.axis('off')
-        ax2.axis('off')
-       
+        
         cursor.execute('''
         SELECT DATE(timestamp) AS date,
         EXTRACT(HOUR FROM timestamp) AS hour,
@@ -90,11 +91,12 @@ def generate_plots_pdf(start_date, end_date):
         data1 = cursor.fetchall()
         hours1 = [row[1] for row in data1]
         rotation_counts1 = [row[2] for row in data1]
-        # print(DataFrame(hours1,rotation_counts1))
 
 
 
         bars1 = ax2.bar(hours1, rotation_counts1, width=0.3,  fill=False  , hatch='///', edgecolor='blue',  label = 'Rotation Count'  )
+        ax2.axes.yaxis.set_ticklabels([])
+        ax2.set_yticks([])
        
         for bar in bars1:
             yval = bar.get_height()
@@ -103,7 +105,6 @@ def generate_plots_pdf(start_date, end_date):
                                         xytext=(0, 3),
                                         textcoords='offset points',
                                         ha='center', va='bottom', fontsize=10)
-            # print(yval)
 
         cursor.execute('''
         SELECT 
@@ -118,7 +119,7 @@ def generate_plots_pdf(start_date, end_date):
         ,(current_date, new_date))
         
         data6 = cursor.fetchall()
-      
+        
         defect_log_df = pd.DataFrame(data6, columns=['timestamp', 'defect_type'])
         defect_log_df['date'] = defect_log_df['timestamp'].dt.date
         defect_log_df['time'] = defect_log_df['timestamp'].dt.strftime('%H:%M:%S')
@@ -128,20 +129,20 @@ def generate_plots_pdf(start_date, end_date):
         
         for sno, row in enumerate(defect_log_df.iterrows(), start=1):
             defect_log_table_data.append([sno, row[1]['time'], row[1]['defect_type']])
-        # print(pd.DataFrame(data6))
-        # print(defect_log_table_data)
         hour_counts = Counter(item[1].split(':')[0] for item in defect_log_table_data)
 
 
         hours = [str(i).zfill(2) for i in range(24)]  # Red bar x axis
         counts = [hour_counts[hour] for hour in hours]  #red bar y axis
-        # print(counts)
-        # print(hours)
-
+        
         bar_width = 0.2  # Adjust the width of the bars
         bar_spacing = 0.002  # Adjust the spacing between the bars
+        plt.rcParams["figure.autolayout"] = True
         bars2 = ax3.bar([int(hour) + 0.5 + bar_spacing * i for i, hour in enumerate(hours)], counts, width=bar_width, color='red', label = 'Defect Count')
- 
+        max_y_limit = max(counts)+1
+        ax3.set_ylim(0, max_y_limit)
+        step_size = 1
+        ax3.set_yticks(range(0, max_y_limit + 1, step_size))
         
         for bar in bars2:
             yval = bar.get_height()
@@ -167,7 +168,6 @@ def generate_plots_pdf(start_date, end_date):
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         
         df = df.sort_values(by='timestamp')
-        # print(df)
         result_dict = {}
         
         def update_count_and_store(row):
@@ -200,7 +200,7 @@ def generate_plots_pdf(start_date, end_date):
         keys = list(map(int, keys))
         values = list(values)
         keys, values = zip(*sorted(zip(keys, values)))
-
+       
         while len(values) < len(hours):
            values = values + (0,)
 
@@ -208,34 +208,30 @@ def generate_plots_pdf(start_date, end_date):
         bar_spacing = 0.002 
 
         bar_positions3 = [int(hour) + 0.5 + bar_spacing * i + bar_width for i, hour in enumerate(hours)]
-        # print("*****************")
-        # print(bar_positions3)
+        
+        # bars3 = ax3.bar(bar_positions3, values, width=bar_width, color='green', label='Impactful Stops')
 
-        bars3 = ax3.bar(bar_positions3, values, width=bar_width, color='green', label='Impactful Stops')
-
-        # print(hour_key)
          
-        for bar in bars3:
-            yval = bar.get_height()
-            if yval != 0:
-                ax3.annotate(f'{yval}',
-                            xy=(bar.get_x() + bar.get_width() / 2, yval),
-                            xytext=(0, 3),
-                            textcoords='offset points',
-                    ha='center', va='bottom', fontsize=15)
+        # for bar in bars3:
+            # yval = bar.get_height()
+            # if yval != 0:
+            #     ax3.annotate(f'{yval}',
+            #                 xy=(bar.get_x() + bar.get_width() / 2, yval),
+            #                 xytext=(0, 3),
+            #                 textcoords='offset points',
+            #         ha='center', va='bottom', fontsize=15)
 
         ax2.set_xlabel('Time of the Day (HOUR)', fontsize=18)
         ax2.set_xticks(range(24)) 
-        # ax2.set_xlabel('Rotation Count',fontsize=18)       
-        # ax3.set_ylabel('Defect Count', fontsize = 18)
-        ax3.set_ylabel('Rotation Count',fontsize=18) 
-        # ax3.tick_params(axis='x', labelsize=18)  
+        ax3.set_ylabel('Defect Count',fontsize=18) 
         ax2.tick_params(axis='x', labelsize=18)
         ax2.tick_params(axis='y', labelsize=18)  
         ax3.tick_params(axis='y', labelsize=18)
         ax2.legend(loc='upper left', fontsize='large')
         ax3.legend(loc='upper right', fontsize='large')
-        
+        print(current_date , new_date)
+
+
         cursor.execute(
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
         (current_date,new_date)
@@ -244,6 +240,7 @@ def generate_plots_pdf(start_date, end_date):
         roll = [data for data in roll if data[1] != "0"]
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
         
+        # return PdfPages,False
 
         if roll_details_df.empty:
             pdf_pages.close()
@@ -351,8 +348,6 @@ def generate_plots_pdf(start_date, end_date):
                 other_defects.append('0')
             else:
                 formatted_other_defects = ''.join([f'{defect_type}: {count}\n' for defect_type, count in other_defect_counts.items()])
-                # print("**********************************")
-                # print(formatted_other_defects)
                 other_defects.append(formatted_other_defects)
 
         
@@ -395,93 +390,30 @@ def generate_plots_pdf(start_date, end_date):
         font_family = 'Arial'  
         font_weight = 'bold'
         line_color = 'red'
-
+        cell_height = 0.025
         for i, label in enumerate(column_labels):
             cell = table[0, i]
             text = cell.get_text()
             text.set_fontfamily(font_family)
             text.set_weight(font_weight)
+            table[(0, i)].set_height(cell_height)
      
         for i in range(len(table_data) + 1):
             for j in range(len(column_labels)):
                 cell = table[i, j]
                 cell.set_edgecolor(line_color)
+
+        # Set cell height and width to a constant value
+        # 
+        # cell_width = 0.1
+        # for i in range(len(table_data)):
+        #     for j in range(len(table_data[0])):
+        #         # table[(i, j)].get_text().set_fontsize(10)  # Set font size (if desired)
+        #         table[(i, j)].set_height(cell_height)
+        #         table[(i, j)].set_width(cell_width)
      
         pdf_pages.savefig(fig)
         plt.close(fig)
-
-        rows_per_page = 40
-        num_pages = -(-len(defect_df) // rows_per_page)
-        for page_num in range(num_pages):
-
-            start_idx = page_num * rows_per_page
-            end_idx = (page_num + 1) * rows_per_page
-            defect_log_table_data_page = defect_df[start_idx:end_idx].copy()  
-            defect_log_table_data_page['timestamp'] = pd.to_datetime(defect_log_table_data_page['timestamp'])
-            defect_log_table_data_page['time_only'] = defect_log_table_data_page['timestamp'].dt.strftime('%H:%M:%S')
-            defect_log_table_data_page.drop(columns=['timestamp'], inplace=True)
-            column_names_to_select = ['time_only', 'defect_type', 'revolution', 'Knit id']
-            defect_log_table_data_page = defect_log_table_data_page[column_names_to_select]
-            defect_log_table_data_page['Shift'] = "Unknown"  
-            shift_a_start = '06:00:00'
-            shift_b_start = '14:30:00'
-            shift_c_start = '23:00:00'
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start), 'Shift'] = "Shift A"
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift B"
-            defect_log_table_data_page.loc[~defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start) & ~defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift C"
-            defect_log_table_data_page_modified = defect_log_table_data_page.values.tolist()
-            fig, ax4 = plt.subplots(figsize=(21, 29.7))
-            
-            logo_path = 'report_img/logo.jpeg'
-            logo_img = mpimg.imread(logo_path)
-            ax_logo = fig.add_subplot(1, 1, 1)
-            ax_logo.imshow(logo_img)
-            ax_logo.axis('off')
-            logo_y_position = 0.87  
-            ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
-            logo_width = 0.2  
-            ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
-            ax_logo.axis('off')
-            ax_logo.set_frame_on(False)
-            ax4.set_title(f"Defect Log Report", fontsize=40, fontfamily = 'Arial' , color = 'red')
-            ax4.axis('off')
-            title_height = 0.1  
-            table_height = 1.0  
-            table_bottom = 1 - title_height - table_height 
-            column_labels = ['Time', 'Defect Type','Revolution', 'Rollno' , 'Shift']
-            table = ax4.table(
-            cellText=defect_log_table_data_page_modified,
-            colLabels=column_labels,
-            cellLoc='center',
-            loc='center',
-            cellColours=[['lightgray']*len(defect_log_table_data_page_modified[0])]*len(defect_log_table_data_page_modified),
-            colColours=['lightgray'] * len(column_labels),
-            bbox=[0.1, table_bottom, 0.8, table_height])
-            table.auto_set_font_size(False)
-            table.set_fontsize(20)
-            table.auto_set_column_width([5, 5, 5])
-            table.scale(1, 2)
-           
-            font_family = 'Arial'  
-            font_weight = 'bold'
-            line_color = 'red'  
-
-            for i, label in enumerate(column_labels):
-                cell = table[0, i]
-                text = cell.get_text()
-                text.set_fontfamily(font_family)
-                text.set_weight(font_weight)
-
-            for i in range(len(defect_log_table_data_page_modified) + 1):
-                for j in range(len(column_labels)):
-                    cell = table[i, j]
-                    cell.set_edgecolor(line_color)
-
-            
-            pdf_pages.savefig(fig)
-            # plt.show()
-            plt.close(fig)
-
     pdf_pages.close()
     cursor.close()
     conn.close()
@@ -490,7 +422,7 @@ def generate_plots_pdf(start_date, end_date):
 
 
 def generate_pdf_performance(report_date):
-    filename = f"SCM_MACHINE1_PERFORMANCE_REPORT_{report_date}.pdf"
+    filename = f"SCM_MACHINE2_PERFORMANCE_REPORT_{report_date}.pdf"
     pdf_buffer, has_data = generate_plots_pdf(report_date, report_date)
     if has_data:
         with open(filename, 'wb') as f:
@@ -500,8 +432,24 @@ def generate_pdf_performance(report_date):
         print(f"No data found for {report_date}. PDF not generated.")
 
 
+def GetMachineName():
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM public.machine_details"
+    )
+    machineDetails = cursor.fetchall()
+    return machineDetails[0][2]
 
-generate_pdf_performance('2023-12-07')
+
+generate_pdf_performance('2023-12-10')
+
+
 
 # if __name__ == '__main__':
 #    generate_pdf_performance('2023-12-07')

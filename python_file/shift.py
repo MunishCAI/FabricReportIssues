@@ -10,6 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
 import matplotlib.image as mpimg
 import locale
+from collections import Counter
 import os
 from configparser import ConfigParser
 
@@ -19,7 +20,13 @@ encoding = 'utf-8'
 
 
 def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
-    conn = psycopg2.connect(host="localhost", database="knitting", user="postgres", password="55555")
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
+    print(machine)
     cursor = conn.cursor()
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -27,61 +34,80 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
     pdf_buffer = BytesIO()
     pdf_pages = PdfPages(pdf_buffer)
     plt.ioff()
+
     for i in range(num_days):
-       
+
         current_date = start_date + datetime.timedelta(days=i)
         new_date = current_date + datetime.timedelta(days=i+1)
-        fig, (ax, ax1 , ax2) = plt.subplots(3, 1, figsize=(21, 29.7))
-        plt.subplots_adjust(hspace=0.8)
-        logo_path = countai_img
+
+
+        fig, (ax, ax1 ) = plt.subplots(2, 1, figsize=(21, 31))
+        # ax3 = ax2.twinx()
+    
+        plt.subplots_adjust(hspace=0.999)
+        
+        logo_path = mill_img
         logo_img = mpimg.imread(logo_path)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.87  
-        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2]) 
-        logo_width = 0.2
+        logo_y_position = 0.899999
+        ax_logo.set_position([0.05, logo_y_position, 0.1, 0.1]) 
+        logo_width = 0.1
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        logo_path_2 = mill_img
+        
+        logo_path_2 = countai_img
         logo_img = mpimg.imread(logo_path_2)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.91
-        ax_logo.set_position([0.03,logo_y_position, 0.10, 0.10])  
-        logo_width = 0.2
+        logo_y_position = 0.846
+        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
+        logo_width = 0.2  
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        ax.text(0.08,1.50 ,f"Inspection Report for Date: {current_date}  ", fontsize = 40, color='black')
-        ax.text(-0.1, 1.00, f"Machine Name: {GetMachineName()}", fontsize = 40, color='black')
-        ax.text(-0.1, 0.75, "Shift: C", fontsize = 40, color='black')
-        ax.text(-0.1, 0.50, "Fabric:", fontsize = 40, color='black')
+        current_datetime = datetime.datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
+        ax.text(-0.150, 0.995, f"Machine Name: {GetMachineName()}", fontsize=40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.895, "Fabric Code:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.795, "Material Type:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.995, f"Date: {current_date}", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.895, "Time :6AM to 6PM", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.65, "Fabric Inspection Report", fontsize = 40, color='red', fontfamily='Arial')
+        # ax.text(-0.150, -2.4, "Production Report & Defect Report", fontsize = 40, color='red', fontfamily='Arial')
+        ax1.text(-0.130, -0.315, f"Pdf generated on : {formatted_datetime}", fontsize = 25, color='black')
+        ax1.text(0.90, -0.315, f"Version : {version} ", fontsize = 25, color='black')
         ax.axis('off')
         ax1.axis('off')
-        ax2.axis('off')
-        
+        # ax2.axis('off')
+
         cursor.execute("SELECT start_time, end_time FROM shift_details WHERE shift_name = 'C'")
         shift = cursor.fetchone()  
         start_time, end_time = shift
-
-
         cursor.execute(
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(new_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
-
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
-
-
-     
+        
+    #     cursor.execute(
+    #     "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
+    #     (current_date,new_date)
+    # )
+    #     roll = cursor.fetchall()
+    #     roll = [data for data in roll if data[1] != "0"]
+    #     roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
+        
 
         if roll_details_df.empty:
             pdf_pages.close()
             return pdf_buffer, False
-
+        
+        
         if len(roll_details_df) == 1:
             roll_details_df.fillna("running", inplace=True)
             roll_details_df['Time Taken'] = "running"
             roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
+            roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
 
         else:
 
@@ -119,8 +145,11 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
                 minutes = int((total_seconds % 3600) // 60)
                 roll_details_df.at[row_index, 'Time Taken'] = f"{hours}h {minutes}m"
 
+
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
+          
+
         for id_value in id_list:
             query = """
             SELECT
@@ -175,7 +204,9 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
             if not other_defect_counts:
                 other_defects.append('0')
             else:
-                formatted_other_defects = ', '.join([f'{defect_type}: {count}' for defect_type, count in other_defect_counts.items()])
+                formatted_other_defects = ''.join([f'{defect_type}: {count}\n' for defect_type, count in other_defect_counts.items()])
+                # print("**********************************")
+                # print(formatted_other_defects)
                 other_defects.append(formatted_other_defects)
 
         
@@ -191,89 +222,71 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
         defect_df.drop(columns=['defect_roll_id','id','roll_name'], inplace=True)
         roll_details_df.drop(columns=['id'], inplace=True)
         roll_details_df.drop(columns=['Roll id'], inplace=True)
-        roll_details_df['Insception'] = ''
+        roll_details_df['Decision'] = ''
 
-        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Insception']
+        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Decision']
         roll_details_df = roll_details_df[column_names_to_select]
         table_data = roll_details_df.values.tolist()
+        # table_data.append([])
+        print(table_data)
+        # table_data = table_data.append(table_data)
+        column_labels = ['Shiftwise\n Roll Id', 'Start\n Time', 'End\n Time', 'Time\n Taken', 'No of\nRevolutions', 'Lycra', 'Needle\nline', 'Hole', 'Other', 'Decision']
+        column_widths = [0.08, 0.1, 0.1, 0.1, 0.1, 0.08, 0.08, 0.08, 0.110, 0.130]
+        
+        table = ax.table(
+        cellText=table_data,
+        colLabels=column_labels,
+        bbox=[-0.130 , -1.99, 1.2, 2.5], 
+        colWidths=column_widths,
+        cellColours=[['lightgray']*len(table_data[0])]*len(table_data),
+        colColours=['lightgray'] * len(column_labels))
 
-        table = ax.table(cellText=table_data, colLabels=['Knit ID', 'Start\n Time', 'End\n Time', 'Time\n Taken',  'No\nof\nDoff', 'Lycra', 'Need\nline', 'Hole', 'Other','Inspection'], bbox=[-0.130, -2.8, 1.2, 3.0])
-        font_size = 18 
+        font_size = 20 
         table.auto_set_font_size(False)
         table.set_fontsize(font_size)
-        header_height = 0.13 
+        header_height = 0.02
         for key, cell in table.get_celld().items():
             if key[0] == 0: 
                 cell.set_height(header_height)
-        table.auto_set_column_width([0,1,2,3,4,5,6,7,8,9])
-        ax1.text(-0.13, -1.2, "Remarks:", fontsize = 30, color='black')
-        ax1.text(-0.13, -1.58, "Knitting Incharge", fontsize = 30, color='black')
-        ax1.text(0.85, -1.58, "Quality Incharge", fontsize = 30, color='black')
-        current_datetime = datetime.datetime.now()
-        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
-        ax1.text(0.71, -2.1, f"Pdf generated on : {formatted_datetime}", fontsize = 24, color='black')
-        ax1.text(0.75, -2.3, f"Version : {version} ", fontsize = 24, color='black')
+
+ 
+        font_family = 'Arial'  
+        font_weight = 'bold'
+        line_color = 'red'
+
+        for i, label in enumerate(column_labels):
+            cell = table[0, i]
+            text = cell.get_text()
+            print(text)
+            text.set_fontfamily(font_family)
+            text.set_weight(font_weight)
+            
+     
+        for i in range(len(table_data) + 1):
+            for j in range(len(column_labels)):
+                cell = table[i, j]
+                cell.set_edgecolor(line_color)
+                cell._text.set_horizontalalignment('center') 
+
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-
-        rows_per_page = 40
-        num_pages = -(-len(defect_df) // rows_per_page)
-        for page_num in range(num_pages):
-            start_idx = page_num * rows_per_page
-            end_idx = (page_num + 1) * rows_per_page
-            defect_log_table_data_page = defect_df[start_idx:end_idx].copy()  
-            defect_log_table_data_page['timestamp'] = pd.to_datetime(defect_log_table_data_page['timestamp'])
-            defect_log_table_data_page['time_only'] = defect_log_table_data_page['timestamp'].dt.strftime('%H:%M:%S')
-            defect_log_table_data_page.drop(columns=['timestamp'], inplace=True)
-            column_names_to_select = ['time_only', 'defect_type', 'revolution', 'Knit id']
-            defect_log_table_data_page = defect_log_table_data_page[column_names_to_select]
-            defect_log_table_data_page['Shift'] = "Unknown"  
-            shift_a_start = '06:00:00'
-            shift_b_start = '14:30:00'
-            shift_c_start = '23:00:00'
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start), 'Shift'] = "Shift A"
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift B"
-            defect_log_table_data_page.loc[~defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start) & ~defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift C"
-            defect_log_table_data_page_modified = defect_log_table_data_page.values.tolist()
-            fig, ax4 = plt.subplots(figsize=(21, 29.7))
-            logo_path = countai_img
-            logo_img = mpimg.imread(logo_path)
-            ax_logo = fig.add_subplot(1, 1, 1)
-            ax_logo.imshow(logo_img)
-            ax_logo.axis('off')
-            logo_y_position = 0.87  
-            ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2]) 
-            logo_width = 0.2 
-            ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
-            ax_logo.axis('off')
-            ax_logo.set_frame_on(False)
-            ax4.set_title(f"Defect Log Report", fontsize=24)
-            ax4.axis('off')
-            title_height = 0.1  
-            table_height = 1.0  
-            table_bottom = 1 - title_height - table_height 
-            table = ax4.table(
-            cellText=defect_log_table_data_page_modified,
-            colLabels=['Time', 'Defect Type','Revolution', 'Rollno' , 'Shift'],
-            cellLoc='center',
-            loc='center',
-            bbox=[0.1, table_bottom, 0.8, table_height])
-            table.auto_set_font_size(False)
-            table.set_fontsize(20)
-            table.auto_set_column_width([5, 5, 5])
-            table.scale(1, 2)
-            pdf_pages.savefig(fig)
-            plt.close(fig)
-        pdf_pages.close()
-        cursor.close()
-        conn.close()
-        pdf_buffer.seek(0)
-        return pdf_buffer, True
+    pdf_pages.close()
+    cursor.close()
+    conn.close()
+    pdf_buffer.seek(0)
+    return pdf_buffer, True
     
 
 def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
-    conn = psycopg2.connect(host="localhost", database="knitting", user="postgres", password="55555")
+    
+
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
     cursor = conn.cursor()
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -281,57 +294,75 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
     pdf_buffer = BytesIO()
     pdf_pages = PdfPages(pdf_buffer)
     plt.ioff()
+
     for i in range(num_days):
-        
-        machineName = GetMachineName()
+
         current_date = start_date + datetime.timedelta(days=i)
         new_date = current_date + datetime.timedelta(days=i+1)
-        fig, (ax, ax1 , ax2) = plt.subplots(3, 1, figsize=(21, 29.7))
-        plt.subplots_adjust(hspace=0.8)
-        logo_path = countai_img
+
+
+        fig, (ax, ax1 ) = plt.subplots(2, 1, figsize=(21, 31))
+        # ax3 = ax2.twinx()
+    
+        plt.subplots_adjust(hspace=0.999)
+        
+        logo_path = mill_img
         logo_img = mpimg.imread(logo_path)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.87  
-        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2]) 
-        logo_width = 0.2
+        logo_y_position = 0.899999
+        ax_logo.set_position([0.05, logo_y_position, 0.1, 0.1]) 
+        logo_width = 0.1
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        logo_path_2 = mill_img
+        
+        logo_path_2 = countai_img
         logo_img = mpimg.imread(logo_path_2)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.91
-        ax_logo.set_position([0.03,logo_y_position, 0.10, 0.10])  
-        logo_width = 0.2
+        logo_y_position = 0.846
+        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
+        logo_width = 0.2  
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        ax.text(0.08,1.50 ,f"Inspection Report for Date: {current_date}  ", fontsize = 40, color='black')
-        ax.text(-0.1, 1.00, f"Machine Name: {machineName}", fontsize = 40, color='black')
-        ax.text(-0.1, 0.75, "Shift: A", fontsize = 40, color='black')
-        ax.text(-0.1, 0.50, "Fabric:", fontsize = 40, color='black')
+        current_datetime = datetime.datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
+        ax.text(-0.150, 0.995, f"Machine Name: {GetMachineName()}", fontsize=40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.895, "Fabric Code:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.795, "Material Type:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.995, f"Date: {current_date}", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.895, "Time :6AM to 6PM", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.65, "Fabric Inspection Report", fontsize = 40, color='red', fontfamily='Arial')
+        # ax.text(-0.150, -2.4, "Production Report & Defect Report", fontsize = 40, color='red', fontfamily='Arial')
+        ax1.text(-0.130, -0.315, f"Pdf generated on : {formatted_datetime}", fontsize = 25, color='black')
+        ax1.text(0.90, -0.315, f"Version : {version} ", fontsize = 25, color='black')
         ax.axis('off')
         ax1.axis('off')
-        ax2.axis('off')
+        # ax2.axis('off')
 
         cursor.execute("SELECT start_time, end_time FROM shift_details WHERE shift_name = 'A'")
         shift = cursor.fetchone()  
         start_time, end_time = shift
-        # print(start_time,end_time)
-        # return pdf_buffer,False
         cursor.execute(
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(current_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
-
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
-
- 
+        
+    #     cursor.execute(
+    #     "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
+    #     (current_date,new_date)
+    # )
+    #     roll = cursor.fetchall()
+    #     roll = [data for data in roll if data[1] != "0"]
+    #     roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
+        
 
         if roll_details_df.empty:
             pdf_pages.close()
             return pdf_buffer, False
-
+        
+        
         if len(roll_details_df) == 1:
             roll_details_df.fillna("running", inplace=True)
             roll_details_df['Time Taken'] = "running"
@@ -373,8 +404,11 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
                 minutes = int((total_seconds % 3600) // 60)
                 roll_details_df.at[row_index, 'Time Taken'] = f"{hours}h {minutes}m"
 
+
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
+          
+
         for id_value in id_list:
             query = """
             SELECT
@@ -429,7 +463,9 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
             if not other_defect_counts:
                 other_defects.append('0')
             else:
-                formatted_other_defects = ', '.join([f'{defect_type}: {count}' for defect_type, count in other_defect_counts.items()])
+                formatted_other_defects = ''.join([f'{defect_type}: {count}\n' for defect_type, count in other_defect_counts.items()])
+                # print("**********************************")
+                # print(formatted_other_defects)
                 other_defects.append(formatted_other_defects)
 
         
@@ -445,88 +481,69 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
         defect_df.drop(columns=['defect_roll_id','id','roll_name'], inplace=True)
         roll_details_df.drop(columns=['id'], inplace=True)
         roll_details_df.drop(columns=['Roll id'], inplace=True)
-        roll_details_df['Insception'] = ''
+        roll_details_df['Decision'] = ''
 
-        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Insception']
+        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Decision']
         roll_details_df = roll_details_df[column_names_to_select]
         table_data = roll_details_df.values.tolist()
+        # table_data.append([])
+        print(table_data)
+        # table_data = table_data.append(table_data)
+        column_labels = ['Shiftwise\n Roll Id', 'Start\n Time', 'End\n Time', 'Time\n Taken', 'No of\nRevolutions', 'Lycra', 'Needle\nline', 'Hole', 'Other', 'Decision']
+        column_widths = [0.08, 0.1, 0.1, 0.1, 0.1, 0.08, 0.08, 0.08, 0.110, 0.130]
+        
+        table = ax.table(
+        cellText=table_data,
+        colLabels=column_labels,
+        bbox=[-0.130 , -1.99, 1.2, 2.5], 
+        colWidths=column_widths,
+        cellColours=[['lightgray']*len(table_data[0])]*len(table_data),
+        colColours=['lightgray'] * len(column_labels))
 
-        table = ax.table(cellText=table_data, colLabels=['Knit ID', 'Start\n Time', 'End\n Time', 'Time\n Taken',  'No\nof\nDoff', 'Lycra', 'Need\nline', 'Hole', 'Other','Inspection'], bbox=[-0.130, -2.8, 1.2, 3.0])
-        font_size = 18 
+        font_size = 20 
         table.auto_set_font_size(False)
         table.set_fontsize(font_size)
-        header_height = 0.13 
+        header_height = 0.02
         for key, cell in table.get_celld().items():
             if key[0] == 0: 
                 cell.set_height(header_height)
-        table.auto_set_column_width([0,1,2,3,4,5,6,7,8,9])
-        ax1.text(-0.13, -1.2, "Remarks:", fontsize = 30, color='black')
-        ax1.text(-0.13, -1.58, "Knitting Incharge", fontsize = 30, color='black')
-        ax1.text(0.85, -1.58, "Quality Incharge", fontsize = 30, color='black')
-        current_datetime = datetime.datetime.now()
-        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
-        ax1.text(0.71, -2.1, f"Pdf generated on : {formatted_datetime}", fontsize = 24, color='black')
-        ax1.text(0.75, -2.3, f"Version : {version} ", fontsize = 24, color='black')
+
+ 
+        font_family = 'Arial'  
+        font_weight = 'bold'
+        line_color = 'red'
+
+        for i, label in enumerate(column_labels):
+            cell = table[0, i]
+            text = cell.get_text()
+            print(text)
+            text.set_fontfamily(font_family)
+            text.set_weight(font_weight)
+            
+     
+        for i in range(len(table_data) + 1):
+            for j in range(len(column_labels)):
+                cell = table[i, j]
+                cell.set_edgecolor(line_color)
+                cell._text.set_horizontalalignment('center') 
+
         pdf_pages.savefig(fig)
         plt.close(fig)
 
+    pdf_pages.close()
+    cursor.close()
+    conn.close()
+    pdf_buffer.seek(0)
+    return pdf_buffer, True
 
-        rows_per_page = 65
-        num_pages = -(-len(defect_df) // rows_per_page)
-        for page_num in range(num_pages):
-            start_idx = page_num * rows_per_page
-            end_idx = (page_num + 1) * rows_per_page
-            defect_log_table_data_page = defect_df[start_idx:end_idx].copy()  
-            defect_log_table_data_page['timestamp'] = pd.to_datetime(defect_log_table_data_page['timestamp'])
-            defect_log_table_data_page['time_only'] = defect_log_table_data_page['timestamp'].dt.strftime('%H:%M:%S')
-            defect_log_table_data_page.drop(columns=['timestamp'], inplace=True)
-            column_names_to_select = ['time_only', 'defect_type', 'revolution', 'Knit id']
-            defect_log_table_data_page = defect_log_table_data_page[column_names_to_select]
-            defect_log_table_data_page['Shift'] = "Unknown"  
-            shift_a_start = '06:00:00'
-            shift_b_start = '14:30:00'
-            shift_c_start = '23:00:00'
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start), 'Shift'] = "Shift A"
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift B"
-            defect_log_table_data_page.loc[~defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start) & ~defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift C"
-            defect_log_table_data_page_modified = defect_log_table_data_page.values.tolist()
-            fig, ax4 = plt.subplots(figsize=(21, 29.7))
-            logo_path = countai_img
-            logo_img = mpimg.imread(logo_path)
-            ax_logo = fig.add_subplot(1, 1, 1)
-            ax_logo.imshow(logo_img)
-            ax_logo.axis('off')
-            logo_y_position = 0.87  
-            ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
-            logo_width = 0.2 
-            ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
-            ax_logo.axis('off')
-            ax_logo.set_frame_on(False)
-            ax4.set_title(f"Defect Log Report", fontsize=24)
-            ax4.axis('off')
-            title_height = 0.1  
-            table_height = 1.0  
-            table_bottom = 1 - title_height - table_height 
-            table = ax4.table(
-            cellText=defect_log_table_data_page_modified,
-            colLabels=['Time', 'Defect Type','Revolution', 'Rollno' , 'Shift'],
-            cellLoc='center',
-            loc='center',
-            bbox=[0.1, table_bottom, 0.8, table_height])
-            table.auto_set_font_size(False)
-            table.set_fontsize(20)
-            table.auto_set_column_width([5, 5, 5])
-            table.scale(1, 2)
-            pdf_pages.savefig(fig)
-            plt.close(fig)
-        pdf_pages.close()
-        cursor.close()
-        conn.close()
-        pdf_buffer.seek(0)
-        return pdf_buffer, True
-    
+
 def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
-    conn = psycopg2.connect(host="localhost", database="knitting", user="postgres", password="55555")
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
     cursor = conn.cursor()
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -534,60 +551,81 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
     pdf_buffer = BytesIO()
     pdf_pages = PdfPages(pdf_buffer)
     plt.ioff()
+
     for i in range(num_days):
-        
+
         current_date = start_date + datetime.timedelta(days=i)
         new_date = current_date + datetime.timedelta(days=i+1)
-        fig, (ax, ax1 , ax2) = plt.subplots(3, 1, figsize=(21, 29.7))
-        plt.subplots_adjust(hspace=0.8)
-        logo_path = countai_img
+
+
+        fig, (ax, ax1 ) = plt.subplots(2, 1, figsize=(21, 31))
+        # ax3 = ax2.twinx()
+    
+        plt.subplots_adjust(hspace=0.999)
+        
+        logo_path = mill_img
         logo_img = mpimg.imread(logo_path)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.87  
-        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2]) 
-        logo_width = 0.2
+        logo_y_position = 0.899999
+        ax_logo.set_position([0.05, logo_y_position, 0.1, 0.1]) 
+        logo_width = 0.1
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        logo_path_2 = mill_img
+        
+        logo_path_2 = countai_img
         logo_img = mpimg.imread(logo_path_2)
         ax_logo = fig.add_subplot(1, 1, 1)
-        logo_y_position = 0.91
-        ax_logo.set_position([0.03,logo_y_position, 0.10, 0.10])  
-        logo_width = 0.2
+        logo_y_position = 0.846
+        ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
+        logo_width = 0.2  
         ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
         ax_logo.axis('off')
         ax_logo.set_frame_on(False)
-        ax.text(0.08,1.50 ,f"Inspection Report for Date: {current_date}  ", fontsize = 40, color='black')
-        ax.text(-0.1, 1.00, f"Machine Name: {GetMachineName()}", fontsize = 40, color='black')
-        ax.text(-0.1, 0.75, "Shift: B", fontsize = 40, color='black')
-        ax.text(-0.1, 0.50, "Fabric:", fontsize = 40, color='black')
+        current_datetime = datetime.datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
+        ax.text(-0.150, 0.995, f"Machine Name: {GetMachineName()}", fontsize=40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.895, "Fabric Code:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.795, "Material Type:", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.995, f"Date: {current_date}", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(0.80, 0.895, "Time :6AM to 6PM", fontsize = 40, color='black', fontfamily='Arial')
+        ax.text(-0.150, 0.65, "Fabric Inspection Report", fontsize = 40, color='red', fontfamily='Arial')
+        # ax.text(-0.150, -2.4, "Production Report & Defect Report", fontsize = 40, color='red', fontfamily='Arial')
+        ax1.text(-0.130, -0.315, f"Pdf generated on : {formatted_datetime}", fontsize = 25, color='black')
+        ax1.text(0.90, -0.315, f"Version : {version} ", fontsize = 25, color='black')
         ax.axis('off')
         ax1.axis('off')
-        ax2.axis('off')
+        # ax2.axis('off')
 
+        
         cursor.execute("SELECT start_time, end_time FROM shift_details WHERE shift_name = 'B'")
         shift = cursor.fetchone()  
         start_time, end_time = shift
-        # print(start_time,end_time)
-        # return pdf_buffer,False
         cursor.execute(
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(current_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
-
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
-
-
+        
+    #     cursor.execute(
+    #     "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
+    #     (current_date,new_date)
+    # )
+    #     roll = cursor.fetchall()
+    #     roll = [data for data in roll if data[1] != "0"]
+    #     roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
+        
 
         if roll_details_df.empty:
             pdf_pages.close()
             return pdf_buffer, False
-
+        
+        
         if len(roll_details_df) == 1:
             roll_details_df.fillna("running", inplace=True)
             roll_details_df['Time Taken'] = "running"
             roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
+            roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
 
         else:
 
@@ -625,8 +663,11 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
                 minutes = int((total_seconds % 3600) // 60)
                 roll_details_df.at[row_index, 'Time Taken'] = f"{hours}h {minutes}m"
 
+
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
+          
+
         for id_value in id_list:
             query = """
             SELECT
@@ -681,7 +722,9 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
             if not other_defect_counts:
                 other_defects.append('0')
             else:
-                formatted_other_defects = ', '.join([f'{defect_type}: {count}' for defect_type, count in other_defect_counts.items()])
+                formatted_other_defects = ''.join([f'{defect_type}: {count}\n' for defect_type, count in other_defect_counts.items()])
+                # print("**********************************")
+                # print(formatted_other_defects)
                 other_defects.append(formatted_other_defects)
 
         
@@ -697,85 +740,63 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
         defect_df.drop(columns=['defect_roll_id','id','roll_name'], inplace=True)
         roll_details_df.drop(columns=['id'], inplace=True)
         roll_details_df.drop(columns=['Roll id'], inplace=True)
-        roll_details_df['Insception'] = ''
+        roll_details_df['Decision'] = ''
 
-        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Insception']
+        column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Decision']
         roll_details_df = roll_details_df[column_names_to_select]
         table_data = roll_details_df.values.tolist()
+        # table_data.append([])
+        print(table_data)
+        # table_data = table_data.append(table_data)
+        column_labels = ['Shiftwise\n Roll Id', 'Start\n Time', 'End\n Time', 'Time\n Taken', 'No of\nRevolutions', 'Lycra', 'Needle\nline', 'Hole', 'Other', 'Decision']
+        column_widths = [0.08, 0.1, 0.1, 0.1, 0.1, 0.08, 0.08, 0.08, 0.110, 0.130]
+        print(table_data)
+        table = ax.table(
+        cellText=table_data,
+        colLabels=column_labels,
+        bbox=[-0.130 , -1.99, 1.2, 2.5], 
+        colWidths=column_widths,
+        cellColours=[['lightgray']*len(table_data[0])]*len(table_data),
+        colColours=['lightgray'] * len(column_labels))
 
-        table = ax.table(cellText=table_data, colLabels=['Knit ID', 'Start\n Time', 'End\n Time', 'Time\n Taken',  'No\nof\nDoff', 'Lycra', 'Need\nline', 'Hole', 'Other','Inspection'], bbox=[-0.130, -2.8, 1.2, 3.0])
-        font_size = 18 
+        font_size = 20 
         table.auto_set_font_size(False)
         table.set_fontsize(font_size)
-        header_height = 0.13 
+        header_height = 0.02
         for key, cell in table.get_celld().items():
             if key[0] == 0: 
                 cell.set_height(header_height)
-        table.auto_set_column_width([0,1,2,3,4,5,6,7,8,9])
-        ax1.text(-0.13, -1.2, "Remarks:", fontsize = 30, color='black')
-        ax1.text(-0.13, -1.58, "Knitting Incharge", fontsize = 30, color='black')
-        ax1.text(0.85, -1.58, "Quality Incharge", fontsize = 30, color='black')
-        current_datetime = datetime.datetime.now()
-        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M")
-        ax1.text(0.71, -2.1, f"Pdf generated on : {formatted_datetime}", fontsize = 24, color='black')
-        ax1.text(0.75, -2.3, f"Version : ", fontsize = 24, color='black')
+
+ 
+        font_family = 'Arial'  
+        font_weight = 'bold'
+        line_color = 'red'
+
+        for i, label in enumerate(column_labels):
+            cell = table[0, i]
+            text = cell.get_text()
+            print(text)
+            text.set_fontfamily(font_family)
+            text.set_weight(font_weight)
+            
+     
+        for i in range(len(table_data) + 1):
+            for j in range(len(column_labels)):
+                cell = table[i, j]
+                cell.set_edgecolor(line_color)
+                cell._text.set_horizontalalignment('center') 
+
         pdf_pages.savefig(fig)
         plt.close(fig)
 
-
-        rows_per_page = 65
-        num_pages = -(-len(defect_df) // rows_per_page)
-        for page_num in range(num_pages):
-            start_idx = page_num * rows_per_page
-            end_idx = (page_num + 1) * rows_per_page
-            defect_log_table_data_page = defect_df[start_idx:end_idx].copy()  
-            defect_log_table_data_page['timestamp'] = pd.to_datetime(defect_log_table_data_page['timestamp'])
-            defect_log_table_data_page['time_only'] = defect_log_table_data_page['timestamp'].dt.strftime('%H:%M:%S')
-            defect_log_table_data_page.drop(columns=['timestamp'], inplace=True)
-            column_names_to_select = ['time_only', 'defect_type', 'revolution', 'Knit id']
-            defect_log_table_data_page = defect_log_table_data_page[column_names_to_select]
-            defect_log_table_data_page['Shift'] = "Unknown"  
-            shift_a_start = '06:00:00'
-            shift_b_start = '14:30:00'
-            shift_c_start = '23:00:00'
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start), 'Shift'] = "Shift A"
-            defect_log_table_data_page.loc[defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift B"
-            defect_log_table_data_page.loc[~defect_log_table_data_page['time_only'].between(shift_a_start, shift_b_start) & ~defect_log_table_data_page['time_only'].between(shift_b_start, shift_c_start), 'Shift'] = "Shift C"
-            defect_log_table_data_page_modified = defect_log_table_data_page.values.tolist()
-            fig, ax4 = plt.subplots(figsize=(21, 29.7))
-            logo_path = countai_img
-            logo_img = mpimg.imread(logo_path)
-            ax_logo = fig.add_subplot(1, 1, 1)
-            ax_logo.imshow(logo_img)
-            ax_logo.axis('off')
-            logo_y_position = 0.87  
-            ax_logo.set_position([0.77, logo_y_position, 0.2, 0.2])  
-            logo_width = 0.2  
-            ax_logo.imshow(logo_img, extent=[0, logo_width, 0, logo_width * logo_img.shape[0] / logo_img.shape[1]])
-            ax_logo.axis('off')
-            ax_logo.set_frame_on(False)
-            ax4.set_title(f"Defect Log Report", fontsize=24)
-            ax4.axis('off')
-            title_height = 0.1  
-            table_height = 1.0  
-            table_bottom = 1 - title_height - table_height 
-            table = ax4.table(
-            cellText=defect_log_table_data_page_modified,
-            colLabels=['Time', 'Defect Type','Revolution', 'Rollno' , 'Shift'],
-            cellLoc='center',
-            loc='center',
-            bbox=[0.1, table_bottom, 0.8, table_height])
-            table.auto_set_font_size(False)
-            table.set_fontsize(20)
-            table.auto_set_column_width([5, 5, 5])
-            table.scale(1, 2)
-            pdf_pages.savefig(fig)
-            plt.close(fig)
-        pdf_pages.close()
-        cursor.close()
-        conn.close()
-        pdf_buffer.seek(0)
-        return pdf_buffer, True
+    pdf_pages.close()
+    cursor.close()
+    conn.close()
+    pdf_buffer.seek(0)
+    return pdf_buffer, True
+       
+        
+    
     
 
 def call_config():
@@ -884,9 +905,9 @@ def GetMachineName():
 
 
 
-# shift_C_pdf('2023-12-07')
-# shift_A_pdf('2023-12-07')
-# shift_B_pdf('2023-12-07')
+# shift_C_pdf('2023-12-10')
+# shift_A_pdf('2023-12-10')
+# shift_B_pdf('2023-12-10')
 
 
 
