@@ -447,7 +447,7 @@ def GetMachineName():
     return machineDetails[0][2]
 
 
-generate_pdf_performance('2023-12-10')
+# generate_pdf_performance('2023-12-10')
 
 
 
