@@ -234,39 +234,66 @@ def generate_plots_pdf(start_date, end_date,version,machine,countai_img,mill_img
 
 
         cursor.execute(
-        "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
+        "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '06:00:00'::interval ORDER BY roll_id ASC;",
         (current_date,new_date)
     )
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
+
+
+
+
+        current_running_roll = GetCurrentRunningRoll(current_date,new_date)
+        flag = 0
+
+
+
+
+        if len(current_running_roll)!=0:
+            current_running_rollls = list(current_running_roll[0])
+            current_running_rollls[5] = current_running_rollls[1]
+            flag=1
+            roll.append(tuple(current_running_rollls))
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
         
-        # return PdfPages,False
 
         if roll_details_df.empty:
             pdf_pages.close()
             return pdf_buffer, False
         
         
-        if len(roll_details_df) == 1:
+        if len(roll_details_df) == -1:
             roll_details_df.fillna("running", inplace=True)
-            roll_details_df['Time Taken'] = "running"
-            roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
 
         else:
 
-            last_row_index = len(roll_details_df) - 1
-            
-            if last_row_index >= 0:
-                roll_details_df.at[last_row_index, 'End Time'] = 'running'  
-
             roll_details_df = roll_details_df.dropna(subset=['Start Time', 'End Time'])
-
             first_row_index = 0
             roll_details_df['Start Time'] = pd.to_datetime(roll_details_df['Start Time'], format="%H:%M:%S.%f", errors='coerce', exact=False)
             roll_details_df['End Time'] = pd.to_datetime(roll_details_df['End Time'], format="%H:%M:%S.%f", errors='coerce', exact=False) 
             roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
             roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')
+
+            
 
             start = pd.to_datetime(roll_details_df.at[first_row_index, 'Start Time'])
             end = pd.to_datetime(roll_details_df.at[first_row_index, 'End Time']) - timedelta(days=1)
@@ -275,7 +302,7 @@ def generate_plots_pdf(start_date, end_date,version,machine,countai_img,mill_img
             minutes = int((diff.seconds // 60) % 60)
             roll_details_df.at[first_row_index, 'Time Taken'] = f"{hours}h {minutes}m"
 
-            for row_index in range(1, len(roll_details_df) - 1):
+            for row_index in range(1, len(roll_details_df) ):
                 start_time = pd.to_datetime(roll_details_df.at[row_index, 'Start Time'])
                 end_time = pd.to_datetime(roll_details_df.at[row_index, 'End Time'])
                 
@@ -292,6 +319,13 @@ def generate_plots_pdf(start_date, end_date,version,machine,countai_img,mill_img
 
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
+        
+
+        last_row_index = len(roll_details_df) - 1
+            
+        if last_row_index >= 0 and flag==1:
+            roll_details_df.at[last_row_index, 'End Time'] = 'running'
+            roll_details_df.at[last_row_index, 'Time Taken'] = 'running'
           
 
         for id_value in id_list:
@@ -356,7 +390,7 @@ def generate_plots_pdf(start_date, end_date,version,machine,countai_img,mill_img
         roll_details_df['Needle Defects'] = needle_counts
         roll_details_df['Hole Defects'] = hole_counts
         roll_details_df['Other Defects'] = other_defects
-        roll_details_df.fillna("running", inplace=True)
+        # roll_details_df.fillna("running", inplace=True)
         roll_details_df['No of Doff'] = pd.to_numeric(roll_details_df['No of Doff'], errors='coerce')
         roll_details_df = roll_details_df[(roll_details_df['No of Doff'].notna()) & (roll_details_df['No of Doff'] != 0)]
         roll_details_df['Knit id'] = range(1, len(roll_details_df) + 1)
@@ -369,7 +403,7 @@ def generate_plots_pdf(start_date, end_date,version,machine,countai_img,mill_img
         column_names_to_select = ['Knit id', 'Start Time', 'End Time', 'Time Taken', 'No of Doff', 'Lycra Defects', 'Needle Defects', 'Hole Defects', 'Other Defects','Decision']
         roll_details_df = roll_details_df[column_names_to_select]
         table_data = roll_details_df.values.tolist()
-        column_labels = ['Shiftwise\n Roll Id', 'Start\n Time', 'End\n Time', 'Time\n Taken', 'No of\nRevolutions', 'Lycra', 'Needle\nline', 'Hole', 'Other', 'Decision']
+        column_labels = ['Roll Id\n ', 'Start\n Time', 'End\n Time', 'Time\n Taken', 'No of\nRevolutions', 'Lycra', 'Needle\nline', 'Hole', 'Other', 'Decision']
         column_widths = [0.08, 0.1, 0.1, 0.1, 0.1, 0.08, 0.08, 0.08, 0.110, 0.130]
         
         table = ax.table(
@@ -475,8 +509,23 @@ def GetMachineName():
     machineDetails = cursor.fetchall()
     return machineDetails[0][2]
 
+def GetCurrentRunningRoll(currentDate,newDate):
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
+    cursor = conn.cursor()
+    cursor.execute(
+        '''SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details 
+        WHERE roll_sts_id =1 and timestamp >= (%s::timestamp + interval '6 hours') AND timestamp < (%s::timestamp + interval '6 hours') ''',(currentDate,newDate)
+    )
+    machineDetails = cursor.fetchall()
+    return machineDetails
 
-generate_pdf_performance('2023-12-10')
+
+generate_pdf_performance('2023-12-11')
 
 
 

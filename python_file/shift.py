@@ -87,15 +87,22 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(new_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
+
+        current_running_roll = GetCurrentRunningRoll(current_date,new_date,start_time,end_time)
+        flag = 0
+
+
+
+
+        if len(current_running_roll)!=0:
+            current_running_rollls = list(current_running_roll[0])
+            current_running_rollls[5] = current_running_rollls[1]
+            flag=1
+            roll.append(tuple(current_running_rollls))
+
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
         
-    #     cursor.execute(
-    #     "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
-    #     (current_date,new_date)
-    # )
-    #     roll = cursor.fetchall()
-    #     roll = [data for data in roll if data[1] != "0"]
-    #     roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
+    
         
 
         if roll_details_df.empty:
@@ -103,20 +110,20 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
             return pdf_buffer, False
         
         
-        if len(roll_details_df) == 1:
+        if len(roll_details_df) == -1:
             roll_details_df.fillna("running", inplace=True)
-            roll_details_df['Time Taken'] = "running"
-            roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
-            roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
+            # roll_details_df['Time Taken'] = "running"
+            # roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
+            # roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
 
         else:
 
             last_row_index = len(roll_details_df) - 1
             
-            if last_row_index >= 0:
-                roll_details_df.at[last_row_index, 'End Time'] = 'running'  
+            # if last_row_index >= 0:
+            #     roll_details_df.at[last_row_index, 'End Time'] = 'running'  
 
-            roll_details_df = roll_details_df.dropna(subset=['Start Time', 'End Time'])
+            # roll_details_df = roll_details_df.dropna(subset=['Start Time', 'End Time'])
 
             first_row_index = 0
             roll_details_df['Start Time'] = pd.to_datetime(roll_details_df['Start Time'], format="%H:%M:%S.%f", errors='coerce', exact=False)
@@ -149,6 +156,13 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
           
+        last_row_index = len(roll_details_df) - 1
+            
+        if last_row_index >= 0 and flag==1:
+            roll_details_df.at[last_row_index, 'End Time'] = 'running'
+            roll_details_df.at[last_row_index, 'Time Taken'] = 'running'
+
+
 
         for id_value in id_list:
             query = """
@@ -214,7 +228,7 @@ def shift_c(start_date, end_date, shift,version,machine,countai_img,mill_img):
         roll_details_df['Needle Defects'] = needle_counts
         roll_details_df['Hole Defects'] = hole_counts
         roll_details_df['Other Defects'] = other_defects
-        roll_details_df.fillna("running", inplace=True)
+        # roll_details_df.fillna("running", inplace=True)
         roll_details_df['No of Doff'] = pd.to_numeric(roll_details_df['No of Doff'], errors='coerce')
         roll_details_df = roll_details_df[(roll_details_df['No of Doff'].notna()) & (roll_details_df['No of Doff'] != 0)]
         roll_details_df['Knit id'] = range(1, len(roll_details_df) + 1)
@@ -347,6 +361,15 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(current_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
+
+        current_running_roll = GetCurrentRunningRoll(current_date,current_date,start_time,end_time)
+        flag = 0
+
+        if len(current_running_roll)!=0:
+                    current_running_rollls = list(current_running_roll[0])
+                    current_running_rollls[5] = current_running_rollls[1]
+                    flag=1
+                    roll.append(tuple(current_running_rollls))
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
         
     #     cursor.execute(
@@ -363,17 +386,17 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
             return pdf_buffer, False
         
         
-        if len(roll_details_df) == 1:
+        if len(roll_details_df) == -1:
             roll_details_df.fillna("running", inplace=True)
-            roll_details_df['Time Taken'] = "running"
-            roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
+            # roll_details_df['Time Taken'] = "running"
+            # roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
 
         else:
 
-            last_row_index = len(roll_details_df) - 1
+            # last_row_index = len(roll_details_df) - 1
             
-            if last_row_index >= 0:
-                roll_details_df.at[last_row_index, 'End Time'] = 'running'  
+            # if last_row_index >= 0:
+            #     roll_details_df.at[last_row_index, 'End Time'] = 'running'  
 
             roll_details_df = roll_details_df.dropna(subset=['Start Time', 'End Time'])
 
@@ -408,6 +431,12 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
           
+        last_row_index = len(roll_details_df) - 1
+            
+        if last_row_index >= 0 and flag==1:
+            roll_details_df.at[last_row_index, 'End Time'] = 'running'
+            roll_details_df.at[last_row_index, 'Time Taken'] = 'running'
+
 
         for id_value in id_list:
             query = """
@@ -473,7 +502,7 @@ def shift_a(start_date, end_date, shift,version,machine,countai_img,mill_img):
         roll_details_df['Needle Defects'] = needle_counts
         roll_details_df['Hole Defects'] = hole_counts
         roll_details_df['Other Defects'] = other_defects
-        roll_details_df.fillna("running", inplace=True)
+        # roll_details_df.fillna("running", inplace=True)
         roll_details_df['No of Doff'] = pd.to_numeric(roll_details_df['No of Doff'], errors='coerce')
         roll_details_df = roll_details_df[(roll_details_df['No of Doff'].notna()) & (roll_details_df['No of Doff'] != 0)]
         roll_details_df['Knit id'] = range(1, len(roll_details_df) + 1)
@@ -605,8 +634,20 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
         "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"+str(current_date)+" "+str(start_time)+"' AND roll_start_date < '"+str(current_date)+" "+str(end_time)+"' ORDER BY roll_id ASC;")
         roll = cursor.fetchall()
         roll = [data for data in roll if data[1] != "0"]
+
+
+        current_running_roll = GetCurrentRunningRoll(current_date,current_date,start_time,end_time)
+        flag = 0
+
+        if len(current_running_roll)!=0:
+                    current_running_rollls = list(current_running_roll[0])
+                    current_running_rollls[5] = current_running_rollls[1]
+                    flag=1
+                    roll.append(tuple(current_running_rollls))
         roll_details_df = pd.DataFrame(roll, columns=['Roll id', 'Start Time', 'Knit id', 'id','No of Doff','End Time'])
         
+
+
     #     cursor.execute(
     #     "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution ,roll_end_date FROM public.roll_details WHERE roll_end_date >= %s::timestamp + '06:00:00'::interval AND roll_end_date < %s::timestamp + '08:00:00'::interval ORDER BY roll_id ASC;",
     #     (current_date,new_date)
@@ -623,16 +664,13 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
         
         if len(roll_details_df) == 1:
             roll_details_df.fillna("running", inplace=True)
-            roll_details_df['Time Taken'] = "running"
-            roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
-            roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
+            # roll_details_df['Time Taken'] = "running"
+            # roll_details_df['Start Time'] = roll_details_df['Start Time'].dt.strftime('%H:%M')
+            # roll_details_df['End Time'] = roll_details_df['End Time'].dt.strftime('%H:%M')            
 
         else:
 
-            last_row_index = len(roll_details_df) - 1
-            
-            if last_row_index >= 0:
-                roll_details_df.at[last_row_index, 'End Time'] = 'running'  
+           
 
             roll_details_df = roll_details_df.dropna(subset=['Start Time', 'End Time'])
 
@@ -666,7 +704,14 @@ def shift_b(start_date, end_date, shift,version,machine,countai_img,mill_img):
 
         id_list = roll_details_df['id'].tolist()
         fetched_data = []
-          
+        
+        last_row_index = len(roll_details_df) - 1
+            
+        if last_row_index >= 0 and flag==1:
+            roll_details_df.at[last_row_index, 'End Time'] = 'running'
+            roll_details_df.at[last_row_index, 'Time Taken'] = 'running'
+
+
 
         for id_value in id_list:
             query = """
@@ -903,10 +948,26 @@ def GetMachineName():
     machineDetails = cursor.fetchall()
     return machineDetails[0][2]
 
+def GetCurrentRunningRoll(currentDate,newDate,start_time,end_time):
+    conn = psycopg2.connect(
+            host='localhost',
+            database='knitting',
+            user='postgres',
+            password='55555'
+        )
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "SELECT roll_number, roll_start_date, roll_name, roll_id, revolution,roll_end_date FROM public.roll_details WHERE roll_start_date >=  '"
+        +str(currentDate)+" "+str(start_time)+"' AND roll_start_date < '"+str(newDate)+" "+str(end_time)+"' AND  roll_sts_id =1  ORDER BY roll_id ASC;"
+    )
+    
+    machineDetails = cursor.fetchall()
+    print(machineDetails)
+    return machineDetails
 
-
-shift_C_pdf('2023-12-10')
-shift_A_pdf('2023-12-10')
+# shift_C_pdf('2023-12-11')
+# shift_A_pdf('2023-12-11')
 shift_B_pdf('2023-12-10')
 
 
