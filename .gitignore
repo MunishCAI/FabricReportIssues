@@ -1,0 +1,9 @@
+venv
+.dist
+__pycache__
+docker/ui.tar
+docker/main.zip
+/report
+main.zip
+test.zip
+newfile.log

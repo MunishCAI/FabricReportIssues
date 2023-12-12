@@ -1,0 +1,17 @@
+sudo docker run --restart=always -it --name knitting-ui -v /home/kniti/Desktop/fabric_report:/app/report -v /home:/home -v /home/kniti/projects/knit-i/config/alarmconfig.ini:/app/alarmconfig.ini -v /home/kniti/projects/knit-i/config/coreconfig.ini:/app/coreconfig.ini -v /home/kniti/projects/knit-i/config/monitorconfig.ini:/app/monitorconfig.ini -v /home/kniti/projects/knit-i/config/config_webui.ini:/app/config_webui.ini -v /media:/media -v /dev:/dev --network=host -e "DB_DBNAME=knitting" -e "DB_PORT=5432" -e "DB_USER=postgres" -e "DB_PASS=55555" -e "DB_HOST=127.0.0.1" -p 5003:8002 --privileged ui
+
+
+
+BUild:
+1.sudo docker build -t (name) .
+2. sudo docker save -o ui.tar ui
+3. write access disable : sudo chmod 777 -R ui.tar
+4. sudo docker load -i ui.tar
+5. docker run
+
+my_key_file.txt
+Fkduohpdjqh@1
+
+1. Intially we have to config system:
+-> install dconfig Editor (sudo apt-get -y install dconf-editor) OR (sudo apt install dconf-editor)
+-> open dconfig Editor then :gnom>desktop>media-handling>(Automount=OFF,Auto Mount Open=OFF)
